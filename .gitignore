@@ -1,5 +1,5 @@
 .venv
-uv.lock
+
 
 # Cache
 __pycache__/
