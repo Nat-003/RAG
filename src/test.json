@@ -1,0 +1,14 @@
+{
+  "rag_questions": [
+    {
+      "question_id": "q1",
+      "question": "What is PagedAttention?"
+    },
+    {
+      "question_id": "q2",
+      "question": "What is BM25?",
+      "sources": [],
+      "answer": "BM25 is a ranking algorithm."
+    }
+  ]
+}
