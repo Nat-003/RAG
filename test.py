@@ -63,3 +63,9 @@ class SourceFile(BaseModel):
     file_path: str
     text: str
     file_type: Literal["python", "markdown", "text"]
+
+#dasdasd
+@oui
+@test
+def test():
+    return "test"
