@@ -1,13 +1,14 @@
-"""Split Python source into searchable chunks with exact character offsets."""
+"""Build validated Python chunks from Reader-provided source files."""
 
 import ast
 import re
 from collections.abc import Callable
-from pathlib import Path
+
+from src.models import Chunk, MinimalSource, SourceFile
 
 
 class Chunker:
-    """Chunk Python source while preserving original source coordinates."""
+    """Convert a SourceFile into traceable, size-bounded Python chunks."""
 
     @staticmethod
     def _validate_size(max_size: int) -> None:
@@ -312,9 +313,39 @@ class Chunker:
             )
         return self.combine_spans(spans, additional_spans)
 
-    def parse_file(
-        self, path: str | Path, max_size: int = 2000
-    ) -> list[tuple[int, int]]:
-        """Read a Python file without changing its line endings."""
-        with Path(path).open("r", encoding="utf-8", newline="") as file:
-            return self.parse_text(file.read(), max_size)
+    def chunk(
+        self,
+        source_file: SourceFile,
+        first_id: int = 0,
+        max_size: int = 2000,
+    ) -> list[Chunk]:
+        """Convert an already-read Python SourceFile into validated chunks."""
+        self._validate_size(max_size)
+        if first_id < 0:
+            raise ValueError("first_id must be nonnegative")
+        if source_file.file_type != "python":
+            raise ValueError("Only Python SourceFile objects are supported")
+        if not source_file.file_path:
+            raise ValueError("SourceFile.file_path must not be empty")
+        spans = self.parse_text(source_file.text, max_size)
+        chunks: list[Chunk] = []
+        previous_end = 0
+        for start, end in spans:
+            if not previous_end <= start < end <= len(source_file.text):
+                raise ValueError("Invalid or overlapping chunk span")
+            if end - start > max_size:
+                raise ValueError("Chunk span exceeds max_size")
+            content = source_file.text[start:end]
+            if not content.strip():
+                raise ValueError("Whitespace-only chunk span")
+            chunks.append(Chunk(
+                chunk_id=first_id + len(chunks),
+                text=content,
+                source=MinimalSource(
+                    file_path=source_file.file_path,
+                    first_character_index=start,
+                    last_character_index=end,
+                ),
+            ))
+            previous_end = end
+        return chunks
