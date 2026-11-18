@@ -319,15 +319,18 @@ class Chunker:
         first_id: int = 0,
         max_size: int = 2000,
     ) -> list[Chunk]:
-        """Convert an already-read Python SourceFile into validated chunks."""
+        """Convert an already-read Python, Markdowm and Text SourceFile into validated chunks."""
         self._validate_size(max_size)
         if first_id < 0:
             raise ValueError("first_id must be nonnegative")
-        if source_file.file_type != "python":
-            raise ValueError("Only Python SourceFile objects are supported")
         if not source_file.file_path:
             raise ValueError("SourceFile.file_path must not be empty")
-        spans = self.parse_text(source_file.text, max_size)
+        if source_file.file_type == "python":
+            spans = self.parse_text(source_file.text, max_size)
+        elif source_file.file_type in ("markdown", "text"):
+            spans = self.parse_markdown_text(source_file.text, max_size)
+        else:
+            raise ValueError("Unsupported file type")
         chunks: list[Chunk] = []
         previous_end = 0
         for start, end in spans:
@@ -349,3 +352,40 @@ class Chunker:
             ))
             previous_end = end
         return chunks
+
+    @staticmethod
+    def parse_paragraphs(text: str) -> list[tuple[int, int]]:
+        """Extract paragraph spans from the original text."""
+        spans: list[tuple[int, int]] = []
+        start: int | None = None
+        offset = 0
+        for line in text.splitlines(keepends=True):
+            if line.strip():
+                if start is None:
+                    start = offset
+            else:
+                if start is not None:
+                    end = offset
+                    spans.append((start, end))
+                    start = None
+            offset += len(line)
+        if start is not None:
+            end = offset
+            spans.append((start, end))
+        return spans
+
+    def parse_markdown_text(
+        self, text: str, max_size: int = 2000
+    ) -> list[tuple[int, int]]:
+        """Split text at paragraph boundaries within the size limit."""
+        self._validate_size(max_size)
+        paragraphs = self.parse_paragraphs(text)
+        spans: list[tuple[int, int]] = []
+        for start, end in paragraphs:
+            if end - start > max_size:
+                spans.extend(
+                    self.split_by_lines(text, start, end, max_size)
+                )
+            else:
+                spans.append((start, end))
+        return self.merge_spans(text, spans, max_size)

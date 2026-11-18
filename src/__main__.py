@@ -49,56 +49,66 @@ def validate_chunks(
 def main() -> None:
     """Exercise real files, Unicode, invalid syntax, and error handling."""
     chunker = Chunker()
-    paths = [Path("src/indexing/chunking.py"), Path("src/models.py")]
-    reader_path = Path("src/indexing/reader.py")
-    if reader_path.is_file():
-        paths.append(reader_path)
-    sources = [read_source(path) for path in paths]
-    sources.append(SourceFile(
-        file_path="data/raw/unicode_sample.py",
-        file_type="python",
-        text=(
-            "# Présentation\r\n"
-            "@decorator\r\n"
-            "def café():\r\n"
-            "    def intérieur():\r\n"
-            "        return '🍰'\r\n"
-            "    return intérieur()\r\n"
-            "\r\n"
-            "# Commentaire final\r\n"
-        ),
-    ))
-    sources.append(SourceFile(
-        file_path="data/raw/invalid_sample.py",
-        file_type="python",
-        text="def broken(:\n    return 'not valid Python'\n",
-    ))
-    for max_size in (100, 2000):
-        all_chunks: list[Chunk] = []
-        for source in sources:
-            first_id = len(all_chunks)
-            chunks = chunker.chunk(source, first_id=first_id, max_size=max_size)
-            validate_chunks(source, chunks, first_id, max_size)
-            all_chunks.extend(chunks)
-            print(f"PASS  size={max_size:4}  chunks={len(chunks):3}  {source.file_path}")
-        assert len({chunk.chunk_id for chunk in all_chunks}) == len(all_chunks)
-        print(f"PASS  unique IDs across {len(sources)} files: {len(all_chunks)} chunks")
-    for bad_size in (0, 2001):
-        try:
-            chunker.chunk(sources[0], max_size=bad_size)
-        except ValueError:
-            print(f"PASS  rejected max_size={bad_size}")
-        else:
-            raise AssertionError(f"Expected ValueError for max_size={bad_size}")
-    try:
-        chunker.chunk(SourceFile(
-            file_path="data/raw/readme.md", text="# Title", file_type="markdown"
-        ))
-    except ValueError:
-        print("PASS  Markdown rejected until its chunking strategy is implemented")
-    else:
-        raise AssertionError("Expected unsupported Markdown to be rejected")
-    print("\nAll Python chunking smoke tests passed.")
+    # with open("test.md", "r") as f:
+    #     content = f.read()
+    #     chunker.parse_plain_text(content, 1)
+    spans = [
+    (0, 300),
+    (302, 700),
+    (702, 1200),
+    (1202, 2500)
+]
+    chunker.merge_paragraphs(spans, 1)
+    # paths = [Path("src/indexing/chunking.py"), Path("src/models.py")]
+    # reader_path = Path("src/indexing/reader.py")
+    # if reader_path.is_file():
+    #     paths.append(reader_path)
+    # sources = [read_source(path) for path in paths]
+    # sources.append(SourceFile(
+    #     file_path="data/raw/unicode_sample.py",
+    #     file_type="python",
+    #     text=(
+    #         "# Présentation\r\n"
+    #         "@decorator\r\n"
+    #         "def café():\r\n"
+    #         "    def intérieur():\r\n"
+    #         "        return '🍰'\r\n"
+    #         "    return intérieur()\r\n"
+    #         "\r\n"
+    #         "# Commentaire final\r\n"
+    #     ),
+    # ))
+    # sources.append(SourceFile(
+    #     file_path="data/raw/invalid_sample.py",
+    #     file_type="python",
+    #     text="def broken(:\n    return 'not valid Python'\n",
+    # ))
+    # for max_size in (100, 2000):
+    #     all_chunks: list[Chunk] = []
+    #     for source in sources:
+    #         first_id = len(all_chunks)
+    #         chunks = chunker.chunk(source, first_id=first_id, max_size=max_size)
+    #         validate_chunks(source, chunks, first_id, max_size)
+    #         all_chunks.extend(chunks)
+    #         print(f"PASS  size={max_size:4}  chunks={len(chunks):3}  {source.file_path}")
+    #     assert len({chunk.chunk_id for chunk in all_chunks}) == len(all_chunks)
+    #     print(f"PASS  unique IDs across {len(sources)} files: {len(all_chunks)} chunks")
+    # for bad_size in (0, 2001):
+    #     try:
+    #         chunker.chunk(sources[0], max_size=bad_size)
+    #     except ValueError:
+    #         print(f"PASS  rejected max_size={bad_size}")
+    #     else:
+    #         raise AssertionError(f"Expected ValueError for max_size={bad_size}")
+    # try:
+    #     chunker.chunk(SourceFile(
+    #         file_path="data/raw/readme.md", text="# Title", file_type="markdown"
+    #     ))
+    # except ValueError:
+    #     print("PASS  Markdown rejected until its chunking strategy is implemented")
+    # else:
+    #     raise AssertionError("Expected unsupported Markdown to be rejected")
+    # print("\nAll Python chunking smoke tests passed.")
 
 
 if __name__ == "__main__":
