@@ -1,6 +1,5 @@
 from pathlib import Path
-from src.models import Chunk
-from retrieval.bm25 import BM25
+from src.retrieval.bm25 import BM25
 from src.models import Chunk, BM25State, IndexManifest
 import json
 

@@ -24,6 +24,8 @@ class BM25:
         self.avgdl = 0.0
         total_tokens = 0
         for chunk in self.chunks:
+            if chunk.chunk_id in self.document_lengths:
+                raise ValueError(f"Duplicate chunk ID: {chunk.chunk_id}")
             tokens = tokenize(chunk.text)
             frequencies = Counter(tokens)
             for term, frequency in frequencies.items():
