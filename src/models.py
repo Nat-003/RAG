@@ -64,3 +64,15 @@ class SourceFile(BaseModel):
     text: str
     file_type: Literal["python", "markdown", "text"]
 
+class BM25State(BaseModel):
+    inverted_index: dict[str, dict[int, int]]
+    document_lengths: dict[int, int]
+    total_documents: int = Field(gt=0)
+    avgdl: float = Field(ge=0, allow_inf_nan=False)
+
+class IndexManifest(BaseModel):
+    format_version: Literal[1]
+    tokenizer_version: Literal[1]
+    k1: float = Field(gt=0, allow_inf_nan=False)
+    b: float = Field(ge=0, le=1)
+    max_chunk_size: int = Field(ge=1, le=2000)
