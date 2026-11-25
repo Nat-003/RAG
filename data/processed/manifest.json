@@ -1,0 +1,7 @@
+{
+    "format_version": 1,
+    "tokenizer_version": 1,
+    "k1": 1.5,
+    "b": 0.75,
+    "max_chunk_size": 2000
+}
