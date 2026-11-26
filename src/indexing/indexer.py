@@ -3,6 +3,7 @@ from .reader import Reader
 from .chunking import Chunker
 from src.models import Chunk
 from src.retrieval.bm25 import BM25
+from tqdm import tqdm
 
 class Indexer:
     def __init__(self, project_root: Path, corpus: Path, max_chunk_size: int = 2000) -> None:
@@ -16,7 +17,7 @@ class Indexer:
         failed_read: dict[Path, str] = {}
         chunks: list[Chunk] = []
         source_file = self.reader.read_directory(self.corpus, failed_read)
-        for f in source_file:
+        for f in tqdm(source_file, desc="Reading and chunking", unit="file"):
             chunks.extend(self.chunker.chunk(f, len(chunks), self.max_chunk_size))
         bm25 = BM25(chunks)
         bm25.build()

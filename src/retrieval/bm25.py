@@ -1,6 +1,7 @@
 from src.models import Chunk
 from .tokenizer import tokenize
 from collections import Counter
+from tqdm import tqdm
 import math
 
 class BM25:
@@ -23,7 +24,7 @@ class BM25:
         self.total_documents = 0
         self.avgdl = 0.0
         total_tokens = 0
-        for chunk in self.chunks:
+        for chunk in tqdm(self.chunks, desc="Building BM25 index", unit="chunk"):
             if chunk.chunk_id in self.document_lengths:
                 raise ValueError(f"Duplicate chunk ID: {chunk.chunk_id}")
             tokens = tokenize(chunk.text)

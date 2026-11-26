@@ -1,6 +1,7 @@
 from pathlib import Path
 from src.retrieval.bm25 import BM25
 from src.models import Chunk, BM25State, IndexManifest
+from tqdm import tqdm
 import json
 
 
@@ -15,7 +16,7 @@ class IndexStorage:
         """Save chunks in JSONL format."""
         file_path = self.storage_path / "chunks.jsonl"
         with file_path.open("w", encoding="utf-8") as file:
-            for chunk in chunks:
+            for chunk in tqdm(chunks, desc="Saving chunks", unit="chunk"):
                 file.write(chunk.model_dump_json() + "\n")
 
     def save_bm25(self, bm25: BM25) -> None:
