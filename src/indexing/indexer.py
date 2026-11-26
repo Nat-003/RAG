@@ -12,11 +12,12 @@ class Indexer:
         self.max_chunk_size = max_chunk_size
         self.reader = Reader(project_root)
         self.chunker = Chunker()
+        self.failed_read: dict[Path, str] = {}
 
     def build(self) -> BM25:
-        failed_read: dict[Path, str] = {}
+        self.failed_read.clear()
         chunks: list[Chunk] = []
-        source_file = self.reader.read_directory(self.corpus, failed_read)
+        source_file = self.reader.read_directory(self.corpus, self.failed_read)
         for f in tqdm(source_file, desc="Reading and chunking", unit="file"):
             chunks.extend(self.chunker.chunk(f, len(chunks), self.max_chunk_size))
         bm25 = BM25(chunks)

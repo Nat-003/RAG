@@ -28,6 +28,7 @@ class IndexStorage:
             "total_documents": bm25.total_documents,
             "avgdl": bm25.avgdl,
         }
+        print("Saving BM25 statistics...")
         with file_path.open("w", encoding="utf-8") as file:
             json.dump(stats, file)
 
