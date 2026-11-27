@@ -1,6 +1,9 @@
 from pathlib import Path
+from src.models import MinimalSource, UnansweredQuestion, MinimalSearchResults, StudentSearchResults
 from src.indexing.indexer import Indexer
 from src.storage.index_store import IndexStorage
+from src.retrieval.retriever import Retriever
+from src.dataset_io import save_json
 import sys
 
 def index(
@@ -25,8 +28,33 @@ def index(
     print(f"Indexed {bm25.total_documents} chunks")
     print(f"Index saved to {storage_file_path}")
 
-def search(query: str, k: int = 5) -> None:
-    print(f"Searching for {query}\nTop k: {k}")
+def search(
+    query: str,
+    k: int = 5,
+    output_path: str = "data/output/search_results/single_query.json",
+    storage_path: str = "data/processed",
+) -> None:
+    """Retrieve the top-k sources for a given query."""
+    if query.strip() == "":
+        raise ValueError('Empty query')
+    if k < 0:
+        raise ValueError("Invalide K")
+    index_storage = IndexStorage(Path(storage_path))
+    bm25 = index_storage.load()
+    retriever = Retriever(bm25)
+    search_result = retriever.search(query, k)
+    sources: list[MinimalSource] = [
+        res.chunk.source for res in search_result
+    ]
+    question = UnansweredQuestion(question=query)
+    result = MinimalSearchResults(
+        question_id=question.question_id,
+        question=question.question,
+        retrieved_sources=sources,
+    )
+    student_search_results = StudentSearchResults(search_results=[result], k = k)
+    save_json(output_path, student_search_results)
+    print(f"Search save at {output_path}")
 
 def search_dataset(dataset_path: str, k: int, save_directory: str) -> None:
     print(f"Dataset path: {dataset_path}\nTop K: {k}\n save_directory: {save_directory}")
