@@ -1,9 +1,10 @@
 from pathlib import Path
-from src.models import MinimalSource, UnansweredQuestion, MinimalSearchResults, StudentSearchResults
+from src.models import MinimalSource, UnansweredQuestion, MinimalSearchResults, StudentSearchResults, RagDataset
 from src.indexing.indexer import Indexer
 from src.storage.index_store import IndexStorage
 from src.retrieval.retriever import Retriever
-from src.dataset_io import save_json
+from src.dataset_io import save_json, load_json
+from tqdm import tqdm
 import sys
 
 def index(
@@ -56,8 +57,24 @@ def search(
     save_json(output_path, student_search_results)
     print(f"Search save at {output_path}")
 
-def search_dataset(dataset_path: str, k: int, save_directory: str) -> None:
-    print(f"Dataset path: {dataset_path}\nTop K: {k}\n save_directory: {save_directory}")
+def search_dataset(dataset_path: str, k: int, save_directory: str, storage_path: str = "data/processed") -> None:
+    if k < 0:
+        raise ValueError("Invalide K")
+    dataset = load_json(dataset_path, RagDataset)
+    index_storage = IndexStorage(Path(storage_path))
+    bm25 = index_storage.load()
+    retriever = Retriever(bm25)
+    search_results: list[MinimalSearchResults] = []
+    for q in tqdm(dataset.rag_questions,  desc="Searching questions", unit="question"):
+        retrieved_chunks = retriever.search(q.question, k)
+        sources: list[MinimalSource] = [
+                res.chunk.source for res in retrieved_chunks
+            ]
+        minimal_search_result = MinimalSearchResults(question_id=q.question_id, question=q.question, retrieved_sources=sources)
+        search_results.append(minimal_search_result)
+    student_search_results = StudentSearchResults(search_results=search_results, k = k)
+    save_to = Path(save_directory) / Path(dataset_path).name
+    save_json(save_to, student_search_results)
 
 def answer(query: str, k: int = 5) -> None:
     print(f"answer for query: {query}\nTop K: {k}")
